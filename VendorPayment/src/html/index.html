@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vendor Payment Manager</title>
+    <link rel="stylesheet" href="../css/index.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="login-section" class="form-section">
+            <h2>Login</h2>
+            <form id="login-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" required>
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+                <div id="login-message" class="message"></div>
+            </form>
+        </div>
+
+        <div id="main-app-section" class="app-section hidden">
+            <header>
+                <h1>Vendor Payment Manager</h1>
+                <button id="logout-button">Logout</button>
+            </header>
+            <main>
+                <p>Welcome to the Vendor Payment Manager dashboard!</p>
+            </main>
+        </div>
+    </div>
+    <script src="../../dist/app.js"></script>
+</body>
+</html>

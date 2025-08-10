@@ -1,0 +1,21 @@
+{
+  "name": "vendorpayment",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "npm run build && lite-server",
+    "watch": "tsc --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/office-js": "^1.0.524",
+    "lite-server": "^2.6.1",
+    "typescript": "^5.9.2"
+  }
+}
