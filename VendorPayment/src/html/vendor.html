@@ -1,13 +1,100 @@
-<h2>Vendor List</h2>
-<table id="vendorTable" border="1" style="width: 100%;">
-    <thead>
-        <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Account</th>
-        </tr>
-    </thead>
-    <tbody id="vendorTableBody">
-        <!-- Vendors will be populated here -->
-    </tbody>
-</table>
+<h2 class="vendor-heading">Vendor List</h2>
+
+<div class="form-container">
+    <form id="vendorForm">
+        <input type="hidden" id="vendorIndex">
+        <label>Name:</label>
+        <input type="text" id="vendorName" required>
+        <label>Type:</label>
+        <input type="text" id="paymentType" required>
+        <label>Account:</label>
+        <input type="text" id="assignedAccount" required>
+        <button type="submit">Save</button>
+        <button type="button" id="cancelEditBtn" class="hidden">Cancel</button>
+    </form>
+</div>
+
+<!-- Centered table -->
+<div class="table-container">
+    <table id="vendorTable" border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Account</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="vendorTableBody">
+            <!-- Vendors will be populated here -->
+        </tbody>
+    </table>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="hidden modal">
+    <div class="modal-content">
+        <p>Are you sure you want to delete this vendor?</p>
+        <button id="confirmDeleteBtn">Yes</button>
+        <button id="cancelDeleteBtn">No</button>
+    </div>
+</div>
+
+<style>
+.hidden { display: none; }
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+.modal-content {
+    background: white;
+    padding: 20px;
+    margin: 20% auto;
+    width: 300px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Table centering */
+.table-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+#vendorTable {
+    border-collapse: collapse;
+    width: 80%; /* Adjust size */
+    background-color: white;
+}
+
+#vendorTable th, #vendorTable td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+#vendorTable th {
+    background-color: #f4f4f4;
+}
+
+.form-container {
+    margin-left: 20px;   /* Shift form inward */
+    margin-right: 20px;  /* Optional: keep same padding on right */
+}
+
+#vendorForm label {
+    margin-right: 8px;
+}
+
+#vendorForm input {
+    margin-right: 12px;
+    padding: 4px;
+}
+
+.vendor-heading {
+    margin-left: 20px; /* adjust this value as needed */
+}
+</style>
