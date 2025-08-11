@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Vendor Payments</title>
+    <link rel="stylesheet" href="../css/payments.css" />
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+
+<body>
+    <h2 class="payments-heading">Payment Scheduling & Execution</h2>
+
+    <div class="account-balances">
+        <p>Account 1 Balance: <span id="acc1Balance">0</span></p>
+        <p>Account 2 Balance: <span id="acc2Balance">0</span></p>
+    </div>
+    <span>
+        <button onclick="window.location.href='index.html'">Back</button>
+    </span>
+
+    <button id="processScheduledBtn">Process Scheduled Payments</button>
+    <button id="triggerOnDemandBtn">Trigger On-Demand Payment</button>
+
+    <div class="table-container">
+        <table id="paymentsTable">
+            <thead>
+                <tr>
+                    <th>Vendor Name</th>
+                    <th>Type</th>
+                    <th>Account</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="paymentsTableBody">
+                <!-- Filled dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Pending Payments</h3>
+    <ul id="pendingList"></ul>
+
+    <!-- Message Modal -->
+    <div id="messageModal" class="hidden modal">
+        <div class="modal-content">
+            <p id="modalText"></p>
+            <button id="modalOkBtn">OK</button>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirmModal" class="hidden modal">
+        <div class="modal-content">
+            <p id="confirmText"></p>
+            <button id="confirmYesBtn">Yes</button>
+            <button id="confirmNoBtn">No</button>
+        </div>
+    </div>
+    <script src="../../dist/app.js"></script>
+    <script src="../../dist/payments.js"></script>
+</body>
+
+</html>
