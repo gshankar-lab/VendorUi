@@ -234,6 +234,15 @@ Office.onReady((info) => {
     } else {
       showLoginSection();
     }
+     document.getElementById("generateReportBtn")?.addEventListener("click", async () => {
+      try {
+        await generateCurrentReport();
+        await showAlert("Report generated successfully.");
+      } catch (err) {
+        console.error("Report generation failed:", err);
+        await showAlert("Failed to generate report (see console).");
+      }
+    });
   }
 });
 
@@ -694,4 +703,47 @@ async function updateExcelBalances() {
     });
 }
 
+
 /* ---------- End ---------- */
+async function generateCurrentReport() {
+  // Get accounts, vendors, and completed payments
+  const accounts = getAccounts(); 
+  const vendors = getVendors();
+  const timestamp = new Date();
+
+  // Prepare completed payment data (vendor names, payment dates, and amounts)
+  const completedPayments = vendors
+    .filter(v => v.lastPaid)
+    .map(v => [v.name, v.lastPaid, v.baseAmount ?? DEFAULT_BASE_AMOUNT]);
+
+  // Use Excel.run to write the data into Excel
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.add("Current Report");
+
+    // Section 1: Account Balances
+    const accountHeader = [["Account Name", "Balance"]];
+    const accountData = accounts.map(a => [a.name, `$${a.balance.toFixed(2)}`]);
+    const accountRange = sheet.getRangeByIndexes(0, 0, accountHeader.length + accountData.length, 2);
+    accountRange.values = [...accountHeader, ...accountData];
+
+    // Section 2: Completed Payments (Vendor Name, Payment Date, Amount)
+    const paymentStartRow = accountData.length + 3;
+    const paymentHeader = [["Vendor Name", "Payment Date", "Amount"]];
+    const paymentRange = sheet.getRangeByIndexes(paymentStartRow, 0, paymentHeader.length + completedPayments.length, 3);
+    paymentRange.values = [...paymentHeader, ...completedPayments];
+
+    // Section 3: Timestamp of Report Generation
+    const timestampRow = paymentStartRow + completedPayments.length + 3;
+    const tsCell = sheet.getRange(`A${timestampRow + 1}`);
+    tsCell.values = [[`Report generated: ${timestamp.toLocaleString()}`]];
+
+    // Formatting (optional)
+    try {
+      sheet.getUsedRange().format.autofitColumns();
+    } catch {}
+
+    sheet.activate();
+    await context.sync();
+  });
+}
+
