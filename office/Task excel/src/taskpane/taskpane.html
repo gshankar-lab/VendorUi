@@ -1,0 +1,90 @@
+<!-- Copyright (c) Microsoft Corporation. All rights reserved. Licensed under the MIT License. -->
+<!-- This file shows how to design a first-run page that provides a welcome screen to the user about the features of the add-in. -->
+
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Contoso Task Pane Add-in</title>
+
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+    <!-- For more information on Fluent UI, visit https://developer.microsoft.com/fluentui#/. -->
+    <link rel="stylesheet" href="https://res-1.cdn.office.net/files/fabric-cdn-prod_20230815.002/office-ui-fabric-core/11.1.0/css/fabric.min.css"/>
+
+    <!-- Template styles -->
+    <link href="taskpane.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body class="ms-font-m ms-welcome ms-Fabric">
+    <header class="ms-welcome__header ms-bgColor-neutralLighter">
+        <img width="90" height="90" src="../../assets/logo-filled.png" alt="Contoso" title="Contoso" />
+        <h1 class="ms-font-su">Welcome Hiii</h1>
+    </header>
+    <section id="sideload-msg" class="ms-welcome__main">
+        <h2 class="ms-font-xl">Please <a target="_blank" href="https://learn.microsoft.com/office/dev/add-ins/testing/test-debug-office-add-ins#sideload-an-office-add-in-for-testing">sideload</a> your add-in to see app body.</h2>
+    </section>
+    <main id="app-body" class="ms-welcome__main" style="display: none;">
+
+    <!-- LOGIN FORM -->
+    <div id="login-section">
+        <h3>Login</h3>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="password" id="password" placeholder="Password" />
+        <button id="loginBtn">Login</button>
+    </div>
+
+    <!-- APP UI -->
+    <!-- <div id="app-section" style="display:none;">
+        <h3>Welcome, <span id="user-name"></span></h3>
+        <button id="run">Run Excel Function</button>
+        <button id="logoutBtn">Logout</button>
+    </div> -->
+
+    <div id="app-section" style="display:none;">
+  <h3>Welcome, <span id="user-name"></span></h3>
+  <button id="run">Run Excel Function</button>
+  <button id="logoutBtn">Logout</button>
+
+  <hr />
+
+  <!-- Vendor Management UI -->
+  <h3>Vendor Management</h3>
+
+  <div id="vendor-form">
+    <input type="hidden" id="vendorId" />
+    <input type="text" id="vendorName" placeholder="Vendor Name" />
+    <select id="paymentType">
+      <option value="Weekly">Weekly</option>
+      <option value="Biweekly">Biweekly</option>
+      <option value="On-Demand">On-Demand</option>
+    </select>
+    <select id="assignedAccount">
+      <option value="Account 1">Account 1</option>
+      <option value="Account 2">Account 2</option>
+    </select>
+    <button id="saveVendorBtn">Save Vendor</button>
+  </div>
+
+  <table id="vendorTable" border="1" style="width:100%; margin-top:10px;">
+    <thead>
+      <tr>
+        <th>Vendor Name</th>
+        <th>Payment Type</th>
+        <th>Assigned Account</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+</main>
+
+</body>
+
+</html>
