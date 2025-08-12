@@ -52,6 +52,25 @@
 
   <hr />
 
+  <div>
+    <h3>Bank Account Simulation</h3>
+    <p>Account 1 Balance: <span id="account1Balance">$200,000</span></p>
+    <p>Account 2 Balance: <span id="account2Balance">$200,000</span></p>
+
+    <label>Payment Amount:</label>
+    <input type="number" id="paymentAmount" />
+
+    <label>Payment Type:</label>
+    <select id="paymentType">
+        <option value="">-- Select Type --</option>
+        <option value="scheduled">Scheduled</option>
+        <option value="ondemand">On-Demand</option>
+    </select>
+
+    <button id="simulatePayment">Simulate Payment</button>
+</div>
+
+
   <!-- Vendor Management UI -->
   <h3>Vendor Management</h3>
 
@@ -82,6 +101,8 @@
     <tbody></tbody>
   </table>
 </div>
+
+
 
 </main>
 

@@ -639,4 +639,59 @@ function escapeHtml(str: string) {
 function run(this: HTMLElement, ev: PointerEvent) {
   throw new Error("Function not implemented.");
 }
+
+/* global Excel, Office */
+
+let account1Balance = 200000;
+let account2Balance = 200000;
+
+Office.onReady(() => {
+    document.getElementById("simulatePayment").onclick = simulatePayment;
+    updateTaskPaneBalances();
+});
+
+// Simulate a payment
+function simulatePayment() {
+    const amountInput = <HTMLInputElement>document.getElementById("paymentAmount");
+    const typeInput = <HTMLSelectElement>document.getElementById("paymentType");
+
+    const paymentAmount = parseFloat(amountInput.value);
+    const paymentType = typeInput.value; // "scheduled" or "ondemand"
+
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+        alert("Please enter a valid payment amount.");
+        return;
+    }
+
+    if (paymentType === "scheduled") {
+        account1Balance -= paymentAmount;
+    } else if (paymentType === "ondemand") {
+        account2Balance -= paymentAmount;
+    } else {
+        alert("Please select a payment type.");
+        return;
+    }
+
+    updateTaskPaneBalances();
+    updateExcelBalances();
+}
+
+// Update balances in the task pane UI
+function updateTaskPaneBalances() {
+    document.getElementById("account1Balance").innerText = `$${account1Balance.toLocaleString()}`;
+    document.getElementById("account2Balance").innerText = `$${account2Balance.toLocaleString()}`;
+}
+
+// Write balances to Excel
+async function updateExcelBalances() {
+    await Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getActiveWorksheet();
+        sheet.getRange("A1").values = [["Account 1 Balance"]];
+        sheet.getRange("B1").values = [["Account 2 Balance"]];
+        sheet.getRange("A2").values = [[account1Balance]];
+        sheet.getRange("B2").values = [[account2Balance]];
+        await context.sync();
+    });
+}
+
 /* ---------- End ---------- */
