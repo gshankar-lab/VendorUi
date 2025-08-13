@@ -24,6 +24,13 @@ interface PendingPayment {
   reason: string;
   createdAt: string;
 }
+interface PendingBankPayment {
+  type: "scheduled" | "ondemand";
+  amount: number;
+  date: string;
+}
+
+let pendingBankPayments: PendingBankPayment[] = [];
 
 /* ---------- Config ---------- */
 const DEFAULT_BASE_AMOUNT = 100; // base amount for vendors
@@ -97,116 +104,170 @@ function vendorRuleByIndex(index: number): "weekly" | "alternate" | "on-demand" 
 
 /* ---------- Small UI modals (no window.prompt/confirm/alert) ---------- */
 function ensureModalContainer() {
-  if (!$("modal-root")) {
-    const div = document.createElement("div");
-    div.id = "modal-root";
-    document.body.appendChild(div);
-    // basic styling
-    const style = document.createElement("style");
-    style.innerHTML = `
-      #modal-root .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:9999; }
-      #modal-root .modal { background:#fff; padding:16px; border-radius:6px; min-width:300px; box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
-      #modal-root .modal h3 { margin:0 0 8px 0; font-size:16px; }
-      #modal-root .modal .actions { margin-top:12px; text-align:right; }
-      #modal-root .modal button { margin-left:8px; }
-      #modal-root input[type="password"], #modal-root input[type="text"] { width:100%; padding:6px; box-sizing:border-box; margin-top:6px; }
-    `;
-    document.head.appendChild(style);
-  }
-}
+    if (!$("modal-root")) {
+        const div = document.createElement("div");
+        div.id = "modal-root";
+        document.body.appendChild(div);
 
-function showPrompt(title: string, placeholder = "", type: "text" | "password" = "text"): Promise<string | null> {
-  ensureModalContainer();
-  return new Promise((resolve) => {
-    const root = $("modal-root")!;
-    const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.innerHTML = `<h3>${escapeHtml(title)}</h3>`;
-    const input = document.createElement("input");
-    input.type = type;
-    input.placeholder = placeholder;
-    modal.appendChild(input);
-    const actions = document.createElement("div");
-    actions.className = "actions";
-    const cancelBtn = document.createElement("button");
-    cancelBtn.textContent = "Cancel";
-    const okBtn = document.createElement("button");
-    okBtn.textContent = "OK";
-    actions.appendChild(cancelBtn);
-    actions.appendChild(okBtn);
-    modal.appendChild(actions);
-    backdrop.appendChild(modal);
-    root.appendChild(backdrop);
-    input.focus();
-
-    function cleanup(val: string | null) {
-      root.removeChild(backdrop);
-      resolve(val);
+        // Basic styling (no innerHTML)
+        const style = document.createElement("style");
+        style.textContent = `
+            #modal-root .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; z-index:9999; }
+            #modal-root .modal { background:#fff; padding:16px; border-radius:6px; min-width:300px; box-shadow: 0 6px 24px rgba(0,0,0,0.2); }
+            #modal-root .modal h3 { margin:0 0 8px 0; font-size:16px; }
+            #modal-root .modal .actions { margin-top:12px; text-align:right; }
+            #modal-root .modal button { margin-left:8px; }
+            #modal-root input[type="password"], #modal-root input[type="text"] { width:100%; padding:6px; box-sizing:border-box; margin-top:6px; }
+        `;
+        document.head.appendChild(style);
     }
-    cancelBtn.onclick = () => cleanup(null);
-    okBtn.onclick = () => cleanup(input.value || "");
-    input.onkeydown = (e) => {
-      if (e.key === "Enter") okBtn.click();
-      if (e.key === "Escape") cancelBtn.click();
-    };
-  });
 }
+
+
+function showPrompt(
+    title: string,
+    placeholder = "",
+    type: "text" | "password" = "text"
+): Promise<string | null> {
+    ensureModalContainer();
+
+    return new Promise((resolve) => {
+        const root = $("modal-root")!;
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop";
+
+        const modal = document.createElement("div");
+        modal.className = "modal";
+
+        // Title
+        const h3 = document.createElement("h3");
+        h3.textContent = title;
+        modal.appendChild(h3);
+
+        // Input field
+        const input = document.createElement("input");
+        input.type = type;
+        input.placeholder = placeholder;
+        modal.appendChild(input);
+
+        // Actions container
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        // Cancel button
+        const cancelBtn = document.createElement("button");
+        cancelBtn.textContent = "Cancel";
+
+        // OK button
+        const okBtn = document.createElement("button");
+        okBtn.textContent = "OK";
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(okBtn);
+        modal.appendChild(actions);
+
+        backdrop.appendChild(modal);
+        root.appendChild(backdrop);
+
+        input.focus();
+
+        function cleanup(val: string | null) {
+            root.removeChild(backdrop);
+            resolve(val);
+        }
+
+        cancelBtn.onclick = () => cleanup(null);
+        okBtn.onclick = () => cleanup(input.value || "");
+        input.onkeydown = (e) => {
+            if (e.key === "Enter") okBtn.click();
+            if (e.key === "Escape") cancelBtn.click();
+        };
+    });
+}
+
 
 function showConfirm(title: string): Promise<boolean> {
-  ensureModalContainer();
-  return new Promise((resolve) => {
-    const root = $("modal-root")!;
-    const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.innerHTML = `<h3>${escapeHtml(title)}</h3>`;
-    const actions = document.createElement("div");
-    actions.className = "actions";
-    const noBtn = document.createElement("button");
-    noBtn.textContent = "No";
-    const yesBtn = document.createElement("button");
-    yesBtn.textContent = "Yes";
-    actions.appendChild(noBtn);
-    actions.appendChild(yesBtn);
-    modal.appendChild(actions);
-    backdrop.appendChild(modal);
-    root.appendChild(backdrop);
+    ensureModalContainer();
 
-    function cleanup(val: boolean) {
-      root.removeChild(backdrop);
-      resolve(val);
-    }
-    noBtn.onclick = () => cleanup(false);
-    yesBtn.onclick = () => cleanup(true);
-  });
+    return new Promise((resolve) => {
+        const root = $("modal-root")!;
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop";
+
+        const modal = document.createElement("div");
+        modal.className = "modal";
+
+        // Title
+        const h3 = document.createElement("h3");
+        h3.textContent = title;
+        modal.appendChild(h3);
+
+        // Actions container
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        // No button
+        const noBtn = document.createElement("button");
+        noBtn.textContent = "No";
+
+        // Yes button
+        const yesBtn = document.createElement("button");
+        yesBtn.textContent = "Yes";
+
+        actions.appendChild(noBtn);
+        actions.appendChild(yesBtn);
+        modal.appendChild(actions);
+
+        backdrop.appendChild(modal);
+        root.appendChild(backdrop);
+
+        function cleanup(val: boolean) {
+            root.removeChild(backdrop);
+            resolve(val);
+        }
+
+        noBtn.onclick = () => cleanup(false);
+        yesBtn.onclick = () => cleanup(true);
+    });
 }
+
 
 function showAlert(message: string): Promise<void> {
-  ensureModalContainer();
-  return new Promise((resolve) => {
-    const root = $("modal-root")!;
-    const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
-    const modal = document.createElement("div");
-    modal.className = "modal";
-    modal.innerHTML = `<h3>${escapeHtml(message)}</h3>`;
-    const actions = document.createElement("div");
-    actions.className = "actions";
-    const okBtn = document.createElement("button");
-    okBtn.textContent = "OK";
-    actions.appendChild(okBtn);
-    modal.appendChild(actions);
-    backdrop.appendChild(modal);
-    root.appendChild(backdrop);
-    okBtn.onclick = () => {
-      root.removeChild(backdrop);
-      resolve();
-    };
-  });
+    ensureModalContainer();
+
+    return new Promise((resolve) => {
+        const root = $("modal-root")!;
+        const backdrop = document.createElement("div");
+        backdrop.className = "modal-backdrop";
+
+        const modal = document.createElement("div");
+        modal.className = "modal";
+
+        // Message
+        const h3 = document.createElement("h3");
+        h3.textContent = message;
+        modal.appendChild(h3);
+
+        // Actions container
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        // OK button
+        const okBtn = document.createElement("button");
+        okBtn.textContent = "OK";
+        actions.appendChild(okBtn);
+
+        modal.appendChild(actions);
+        backdrop.appendChild(modal);
+        root.appendChild(backdrop);
+
+        okBtn.onclick = () => {
+            root.removeChild(backdrop);
+            resolve();
+        };
+    });
 }
+
 
 /* ---------- Initialization ---------- */
 Office.onReady((info) => {
@@ -234,7 +295,7 @@ Office.onReady((info) => {
     } else {
       showLoginSection();
     }
-     document.getElementById("generateReportBtn")?.addEventListener("click", async () => {
+    document.getElementById("generateReportBtn")?.addEventListener("click", async () => {
       try {
         await generateCurrentReport();
         await showAlert("Report generated successfully.");
@@ -354,35 +415,87 @@ function normalizeVendorsAndRender() {
 
 /* ---------- Render Vendor Table ---------- */
 function renderVendorTable() {
-  const tbody = document.querySelector("#vendorTable tbody") as HTMLTableSectionElement | null;
-  if (!tbody) return;
-  tbody.innerHTML = "";
-  const vendors = getVendors();
+    const tbody = document.querySelector("#vendorTable tbody") as HTMLTableSectionElement | null;
+    if (!tbody) return;
+    tbody.textContent = ""; // safer than innerHTML for clearing
 
-  vendors.forEach((v, idx) => {
-    const rule = vendorRuleByIndex(idx);
-    const base = v.baseAmount ?? DEFAULT_BASE_AMOUNT;
-    const paymentTypeLabel = v.paymentType || (rule === "on-demand" ? "On-Demand" : (rule === "alternate" ? "Biweekly" : "Weekly"));
+    const vendors = getVendors();
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${escapeHtml(v.name)}</td>
-      <td>${escapeHtml(paymentTypeLabel)}</td>
-      <td>
-        <select class="change-account" data-id="${v.id}">
-          <option value="Account 1"${v.assignedAccount==="Account 1"?" selected":""}>Account 1</option>
-          <option value="Account 2"${v.assignedAccount==="Account 2"?" selected":""}>Account 2</option>
-        </select>
-      </td>
-      <td>
-        <button class="edit-btn" data-id="${v.id}">Edit</button>
-        <button class="pay-now-btn" data-id="${v.id}">Pay Now</button>
-        <button class="delete-btn" data-id="${v.id}">Delete</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    vendors.forEach((v, idx) => {
+        const rule = vendorRuleByIndex(idx);
+        const base = v.baseAmount ?? DEFAULT_BASE_AMOUNT;
+        const paymentTypeLabel =
+            v.paymentType ||
+            (rule === "on-demand"
+                ? "On-Demand"
+                : rule === "alternate"
+                ? "Biweekly"
+                : "Weekly");
+
+        const tr = document.createElement("tr");
+
+        // Name cell
+        const nameTd = document.createElement("td");
+        nameTd.textContent = v.name;
+        tr.appendChild(nameTd);
+
+        // Payment type cell
+        const typeTd = document.createElement("td");
+        typeTd.textContent = paymentTypeLabel;
+        tr.appendChild(typeTd);
+
+        // Account select cell
+        const accountTd = document.createElement("td");
+        const select = document.createElement("select");
+        select.className = "change-account";
+        select.dataset.id = v.id;
+
+        const account1Option = document.createElement("option");
+        account1Option.value = "Account 1";
+        account1Option.textContent = "Account 1";
+        if (v.assignedAccount === "Account 1") {
+            account1Option.selected = true;
+        }
+
+        const account2Option = document.createElement("option");
+        account2Option.value = "Account 2";
+        account2Option.textContent = "Account 2";
+        if (v.assignedAccount === "Account 2") {
+            account2Option.selected = true;
+        }
+
+        select.appendChild(account1Option);
+        select.appendChild(account2Option);
+        accountTd.appendChild(select);
+        tr.appendChild(accountTd);
+
+        // Actions cell
+        const actionsTd = document.createElement("td");
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "edit-btn";
+        editBtn.dataset.id = v.id;
+        editBtn.textContent = "Edit";
+
+        const payNowBtn = document.createElement("button");
+        payNowBtn.className = "pay-now-btn";
+        payNowBtn.dataset.id = v.id;
+        payNowBtn.textContent = "Pay Now";
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-btn";
+        deleteBtn.dataset.id = v.id;
+        deleteBtn.textContent = "Delete";
+
+        actionsTd.appendChild(editBtn);
+        actionsTd.appendChild(payNowBtn);
+        actionsTd.appendChild(deleteBtn);
+        tr.appendChild(actionsTd);
+
+        tbody.appendChild(tr);
+    });
 }
+
 
 /* ---------- Save / Edit / Delete Vendor ---------- */
 function saveVendor() {
@@ -566,34 +679,81 @@ async function onDemandPay(vendorId: string) {
 
 /* ---------- Pending list UI & retry ---------- */
 function renderPendingList() {
-  const container = $('pendingPaymentsContainer');
-  if (!container) return;
-  const pending = getPending();
-  if (!pending || pending.length === 0) {
-    container.innerHTML = "<p>No pending payments</p>";
-    return;
-  }
-  let html = `<h4>Pending Payments (${pending.length})</h4>`;
-  html += `<table border="1" style="width:100%; border-collapse:collapse"><thead><tr><th>Vendor</th><th>Amount</th><th>Reason</th><th>Created</th><th>Action</th></tr></thead><tbody>`;
-  pending.forEach(p => {
-    html += `<tr>
-      <td>${escapeHtml(p.vendorName)}</td>
-      <td>${p.amount}</td>
-      <td>${escapeHtml(p.reason)}</td>
-      <td>${new Date(p.createdAt).toLocaleString()}</td>
-      <td><button class="retry-btn" data-id="${p.id}">Retry</button></td>
-    </tr>`;
-  });
-  html += `</tbody></table>`;
-  container.innerHTML = html;
+    const container = $("pendingPaymentsContainer");
+    if (!container) return;
 
-  container.querySelectorAll<HTMLButtonElement>('.retry-btn').forEach(btn => {
-    btn.onclick = async () => {
-      const id = btn.dataset.id!;
-      await retryPending(id);
-    };
-  });
+    // Clear container safely
+    container.textContent = "";
+
+    const pending = getPending();
+    if (!pending || pending.length === 0) {
+        const noMsg = document.createElement("p");
+        noMsg.textContent = "No pending payments";
+        container.appendChild(noMsg);
+        return;
+    }
+
+    // Heading
+    const heading = document.createElement("h4");
+    heading.textContent = `Pending Payments (${pending.length})`;
+    container.appendChild(heading);
+
+    // Table
+    const table = document.createElement("table");
+    table.style.width = "100%";
+    table.style.borderCollapse = "collapse";
+    table.border = "1";
+
+    // Table Head
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["Vendor", "Amount", "Reason", "Created", "Action"].forEach(text => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    // Table Body
+    const tbody = document.createElement("tbody");
+    pending.forEach(p => {
+        const row = document.createElement("tr");
+
+        const vendorTd = document.createElement("td");
+        vendorTd.textContent = p.vendorName;
+        row.appendChild(vendorTd);
+
+        const amountTd = document.createElement("td");
+        amountTd.textContent = p.amount.toString();
+        row.appendChild(amountTd);
+
+        const reasonTd = document.createElement("td");
+        reasonTd.textContent = p.reason;
+        row.appendChild(reasonTd);
+
+        const createdTd = document.createElement("td");
+        createdTd.textContent = new Date(p.createdAt).toLocaleString();
+        row.appendChild(createdTd);
+
+        const actionTd = document.createElement("td");
+        const retryBtn = document.createElement("button");
+        retryBtn.className = "retry-btn";
+        retryBtn.dataset.id = p.id;
+        retryBtn.textContent = "Retry";
+        retryBtn.onclick = async () => {
+            await retryPending(p.id);
+        };
+        actionTd.appendChild(retryBtn);
+        row.appendChild(actionTd);
+
+        tbody.appendChild(row);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
 }
+
 
 async function retryPending(pendingId: string) {
   const pending = getPending();
@@ -624,14 +784,14 @@ async function writeVendorsToSheet() {
     }
     await Excel.run(async (context) => {
       const sheet = context.workbook.worksheets.getActiveWorksheet();
-      try { sheet.getRange("A1:C1000").clear(); } catch {}
+      try { sheet.getRange("A1:C1000").clear(); } catch { }
       if (!vendors || vendors.length === 0) { await context.sync(); return; }
 
       const header = ['Vendor Name', 'Payment Type', 'Assigned Account'];
       const data = [header, ...vendors.map(v => [v.name, v.paymentType, v.assignedAccount])];
       const targetRange = sheet.getRangeByIndexes(0, 0, data.length, header.length);
       targetRange.values = data;
-      try { targetRange.getEntireColumn().format.autofitColumns(); } catch {}
+      try { targetRange.getEntireColumn().format.autofitColumns(); } catch { }
       await context.sync();
     });
   } catch (err) {
@@ -655,59 +815,107 @@ let account1Balance = 200000;
 let account2Balance = 200000;
 
 Office.onReady(() => {
-    document.getElementById("simulatePayment").onclick = simulatePayment;
-    updateTaskPaneBalances();
+  document.getElementById("simulatePayment").onclick = simulatePayment;
+  updateTaskPaneBalances();
 });
 
 // Simulate a payment
 function simulatePayment() {
-    const amountInput = <HTMLInputElement>document.getElementById("paymentAmount");
-    const typeInput = <HTMLSelectElement>document.getElementById("paymentType");
+  const amountInput = document.getElementById("paymentAmount") as HTMLInputElement;
+  const typeInput = document.getElementById("paymentTypeData") as HTMLSelectElement;
 
-    const paymentAmount = parseFloat(amountInput.value);
-    const paymentType = typeInput.value; // "scheduled" or "ondemand"
+  const paymentAmount = parseFloat(amountInput.value);
+  const paymentTypeData = typeInput.value as "scheduled" | "ondemand";
 
-    if (isNaN(paymentAmount) || paymentAmount <= 0) {
-        alert("Please enter a valid payment amount.");
-        return;
-    }
+  if (isNaN(paymentAmount) || paymentAmount <= 0) {
+    showMessage("Please enter a valid payment amount.");
+    return;
+  }
 
-    if (paymentType === "scheduled") {
-        account1Balance -= paymentAmount;
-    } else if (paymentType === "ondemand") {
-        account2Balance -= paymentAmount;
+  if (paymentTypeData !== "scheduled" && paymentTypeData !== "ondemand") {
+    showMessage("Please select a valid payment type.");
+    return;
+  }
+
+  if (paymentTypeData === "scheduled") {
+    if (account1Balance >= paymentAmount) {
+      account1Balance -= paymentAmount;
+      showMessage(`Payment of $${paymentAmount.toFixed(2)} processed from Account 1.`);
     } else {
-        alert("Please select a payment type.");
-        return;
+      pendingBankPayments.push({
+        type: paymentTypeData,
+        amount: paymentAmount,
+        date: new Date().toISOString(),
+      });
+      showMessage(`Insufficient funds in Account 1. Payment added to pending list.`);
     }
+  } else {
+    if (account2Balance >= paymentAmount) {
+      account2Balance -= paymentAmount;
+      showMessage(`Payment of $${paymentAmount.toFixed(2)} processed from Account 2.`);
+    } else {
+      pendingBankPayments.push({
+        type: paymentTypeData,
+        amount: paymentAmount,
+        date: new Date().toISOString(),
+      });
+      showMessage(`Insufficient funds in Account 2. Payment added to pending list.`);
+    }
+  }
 
-    updateTaskPaneBalances();
-    updateExcelBalances();
+  updateTaskPaneBalances();
+  updateExcelBalances();
 }
 
 // Update balances in the task pane UI
 function updateTaskPaneBalances() {
-    document.getElementById("account1Balance").innerText = `$${account1Balance.toLocaleString()}`;
-    document.getElementById("account2Balance").innerText = `$${account2Balance.toLocaleString()}`;
+  document.getElementById("account1Balance").innerText = `$${account1Balance.toLocaleString()}`;
+  document.getElementById("account2Balance").innerText = `$${account2Balance.toLocaleString()}`;
 }
 
 // Write balances to Excel
 async function updateExcelBalances() {
-    await Excel.run(async (context) => {
-        const sheet = context.workbook.worksheets.getActiveWorksheet();
-        sheet.getRange("A1").values = [["Account 1 Balance"]];
-        sheet.getRange("B1").values = [["Account 2 Balance"]];
-        sheet.getRange("A2").values = [[account1Balance]];
-        sheet.getRange("B2").values = [[account2Balance]];
-        await context.sync();
-    });
+  await Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getActiveWorksheet();
+    sheet.getRange("A1").values = [["Account 1 Balance"]];
+    sheet.getRange("B1").values = [["Account 2 Balance"]];
+    sheet.getRange("A2").values = [[account1Balance]];
+    sheet.getRange("B2").values = [[account2Balance]];
+    await context.sync();
+  });
 }
 
+function processPendingPayments() {
+  let processedCount = 0;
+
+  pendingBankPayments = pendingBankPayments.filter(payment => {
+    if (payment.type === "scheduled" && account1Balance >= payment.amount) {
+      account1Balance -= payment.amount;
+      processedCount++;
+      return false; // remove from list
+    }
+    if (payment.type === "ondemand" && account2Balance >= payment.amount) {
+      account2Balance -= payment.amount;
+      processedCount++;
+      return false; // remove from list
+    }
+    return true; // keep in list
+  });
+
+  if (processedCount > 0) {
+    showMessage(`Processed ${processedCount} pending payment(s).`);
+  } else {
+    showMessage("No pending payments could be processed.");
+  }
+
+  updateTaskPaneBalances();
+  updateExcelBalances();
+}
 
 /* ---------- End ---------- */
 async function generateCurrentReport() {
   // Get accounts, vendors, and completed payments
-  const accounts = getAccounts(); 
+  const accounts = getAccounts();
   const vendors = getVendors();
   const timestamp = new Date();
 
@@ -740,10 +948,20 @@ async function generateCurrentReport() {
     // Formatting (optional)
     try {
       sheet.getUsedRange().format.autofitColumns();
-    } catch {}
+    } catch { }
 
     sheet.activate();
     await context.sync();
   });
 }
+
+// show message
+function showMessage(message: string) {
+  console.log(message); // for debugging in console
+  const statusDiv = document.getElementById("statusMessage");
+  if (statusDiv) {
+    statusDiv.textContent = message;
+  }
+}
+
 
